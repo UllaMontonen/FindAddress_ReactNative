@@ -8,11 +8,11 @@ import {API_TOKEN} from '@env';
 export default function App() {
 
   const [address, setAddress] = useState(''); // State where address is saved
-  const [region, setRegion] = useState(initial);
   const [location, setLocation] = useState(null); // State where location is saved
 
   // Asking a permission to use the location
-  useEffect(() => (async () => {
+  useEffect(() => {
+    (async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('No permission to get location')
@@ -22,7 +22,11 @@ export default function App() {
     let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
     setLocation(location);
     console.log('Location:', location)
-  })(), []);
+
+
+  })(); }, []);
+
+
 
   // setting up initial map view (Haaga-Helia campus)
   const initial = {
@@ -31,6 +35,7 @@ export default function App() {
     latitudeDelta: 0.0322,
     longitudeDelta: 0.0221,
   };
+
   
 // fetching the given address
 const getAddress = async (address) => {
@@ -48,7 +53,7 @@ const getAddress = async (address) => {
 
     const {lat, lng } = data.results[0].locations[0].latLng;
     console.log(lat, lng);
-    setRegion({ ...region, latitude: lat, longitude: lng })
+    setLocation({ ...location, latitude: lat, longitude: lng })
   } catch (error) {
     console.error('Api call failed', error.message);
   }
@@ -72,9 +77,8 @@ const getAddress = async (address) => {
       <MapView
         style={styles.map}
         initialRegion={initial}
-        region={region} 
       >
-        <Marker coordinate={region}/>
+        <Marker coordinate={location}/>
       </MapView>
       
       <StatusBar style="auto" />
