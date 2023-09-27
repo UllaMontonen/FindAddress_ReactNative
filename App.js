@@ -1,14 +1,30 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Keyboard, StyleSheet, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 import {API_TOKEN} from '@env';
 
 export default function App() {
 
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(''); // State where address is saved
   const [region, setRegion] = useState(initial);
+  const [location, setLocation] = useState(null); // State where location is saved
 
+  // Asking a permission to use the location
+  useEffect(() => (async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('No permission to get location')
+      return;
+    }
+
+    let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+    setLocation(location);
+    console.log('Location:', location)
+  })(), []);
+
+  // setting up initial map view (Haaga-Helia campus)
   const initial = {
     latitude: 60.200692,
     longitude: 24.934302,
@@ -16,7 +32,7 @@ export default function App() {
     longitudeDelta: 0.0221,
   };
   
-
+// fetching the given address
 const getAddress = async (address) => {
   const KEY = {
     headers: {
