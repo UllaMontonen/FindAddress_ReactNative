@@ -3,30 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Button, Keyboard, StyleSheet, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import {API_TOKEN} from '@env';
 
 export default function App() {
-
-  const [address, setAddress] = useState(''); // State where address is saved
-  const [location, setLocation] = useState(null); // State where location is saved
-
-  // Asking a permission to use the location
-  useEffect(() => {
-    (async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('No permission to get location')
-      return;
-    }
-
-    let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    setLocation(location);
-    console.log('Location:', location)
-
-
-  })(); }, []);
-
-
 
   // setting up initial map view (Haaga-Helia campus)
   const initial = {
@@ -36,28 +14,43 @@ export default function App() {
     longitudeDelta: 0.0221,
   };
 
+  const [region, setRegion] = useState(initial); // State where location is saved
+  const [address, setAddress] = useState(''); // State where address is saved
+
+  // Asking a permission to use the location
+  useEffect(() => {
+    const fetchLocation = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('No permission to get location');
+    } else {
+      try {
+        let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        setRegion({ ...region, latitude: location.coords.latitude, longitude: location.coords.longitude});
+        console.log('Location:', location)
+      } catch (error) {
+        console.log.apply(error.message);
+      }
+    }
+  } 
+  fetchLocation(); 
+}, []);
+
   
 // fetching the given address
-const getAddress = async (address) => {
-  const KEY = {
-    headers: {
-      apikey: API_TOKEN
-    }
-  }
+const fetchCoordinates = (address) => {
+  const KEY = process.env.EXPO_PUBLIC_API_TOKEN; 
   const url = `https://www.mapquestapi.com/geocoding/v1/address?key=${KEY}&location=${address}`;
 
-  try {
-    const response = await fetch(url, KEY);
-    const data = await response.json();
-    console.log(data);
-
-    const {lat, lng } = data.results[0].locations[0].latLng;
-    console.log(lat, lng);
-    setLocation({ ...location, latitude: lat, longitude: lng })
-  } catch (error) {
-    console.error('Api call failed', error.message);
-  }
-  Keyboard.dismiss();
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      console.log(data);
+      const {lat, lng} = data.results[0].location[0].latLng;
+      setRegion({ ...region, latitude: lat, longitude: lng })
+    })
+    .catch(error => console.error('error', error.message));
+    Keyboard.dismiss();
 };
 
 
@@ -72,13 +65,13 @@ const getAddress = async (address) => {
         placeholder={'Address'}
       />
       <View style={styles.button}>
-      <Button onPress={() => getAddress(address)} title='SHOW'></Button>
+      <Button onPress={() => fetchCoordinates(address)} title='SHOW'></Button>
       </View>
       <MapView
         style={styles.map}
-        initialRegion={initial}
+        region={region}
       >
-        <Marker coordinate={location}/>
+        <Marker coordinate={region}/>
       </MapView>
       
       <StatusBar style="auto" />
