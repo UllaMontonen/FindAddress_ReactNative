@@ -46,7 +46,7 @@ const fetchCoordinates = (address) => {
     .then(response => response.json())
     .then(data => {
       console.log(data);
-      const {lat, lng} = data.results[0].location[0].latLng;
+      const {lat, lng} = data.results[0].locations[0].latLng;
       setRegion({ ...region, latitude: lat, longitude: lng })
     })
     .catch(error => console.error('error', error.message));
